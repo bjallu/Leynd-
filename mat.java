@@ -18,6 +18,28 @@ public class mat {
         }
     }
 
+    /*
+    Build matrix from Kattis' input lines
+    matDesc is on the format:
+    1 3 0.3 0.3 0.4
+     */
+    public mat (String matDesc){
+        String[] i = matDesc.split(" ");
+        List<String> items = Arrays.asList(i);
+        nmrOfRows = Integer.parseInt(items.get(0));
+        nmrOfColumns = Integer.parseInt(items.get(1));
+        items = items.subList(2,items.size());
+        int currRow = 0;
+        matrix = new ArrayList<>();
+        while(currRow<nmrOfRows){
+            List<String> tmpStr = new ArrayList<>(items.subList(currRow*nmrOfColumns,(currRow+1)*nmrOfColumns));
+            List<Double> tmpDouble = new ArrayList<>();
+            for(String s: tmpStr) tmpDouble.add(Double.valueOf(s));
+            matrix.add(tmpDouble);
+            currRow++;
+        }
+    }
+
     public Double getElement(int i, int j){
         return matrix.get(i).get(j);
     }
@@ -92,6 +114,9 @@ public class mat {
         g.setElement(0,0,1.0);
         g.setElement(0,1,2.0);
         g.setElement(0,2,3.0);
+
+        mat matFromString = new mat("2 3 1 1 1 2 2 2");
+        matFromString.product(m).printMatrix();
 
         mat res = m.product(n);
         mat res2 = f.dotProduct(g);
