@@ -6,6 +6,12 @@ public class mat {
     private int nmrOfColumns;
     private int nmrOfRows;
 
+    public mat(){
+        nmrOfColumns=0;
+        nmrOfRows=0;
+        matrix = new ArrayList<>();
+    }
+
     public mat(int N,int M){
         nmrOfRows = N;
         nmrOfColumns = M;
@@ -88,6 +94,32 @@ public class mat {
             }
         }
         return result;
+    }
+
+    public mat dotProductColumn(mat multBy, int col){
+        mat result = new mat(this.getNmrOfRows(),multBy.getNmrOfColumns());
+        if (this.getNmrOfColumns() != multBy.getNmrOfRows()|| this.getNmrOfRows()!=1) {
+            throw new java.lang.RuntimeException("Dimensions do not match!");
+        } else {
+            for (int i = 0; i<this.getNmrOfRows();i++) {
+                for (int j = 0; j<multBy.getNmrOfRows();j++){
+                    result.setElement(i,col,result.getElement(i,col)+this.getElement(i,j)*multBy.getElement(j,col));
+                }
+            }
+        }
+        return result;
+    }
+
+    public Double sumElements(){
+        Double sum = 0.0;
+        if (this.getNmrOfRows() != 1){
+            throw new java.lang.RuntimeException("Must be have dimensions 1XM");
+        } else {
+            for (Double d:matrix.get(0)){
+                sum += d;
+            }
+        }
+        return sum;
     }
 
     public void printMatrix(){
