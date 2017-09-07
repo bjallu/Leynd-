@@ -1,3 +1,5 @@
+import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.util.*;
 
 public class mat {
@@ -71,6 +73,22 @@ public class mat {
     public void printMatrix(){
         for (List v:this.matrix){
             System.out.println(Arrays.toString(v.toArray()));
+        }
+    }
+    
+    public void printMatrixForKattis() {
+    	// First print the matrix dimensions then loop through the values
+    	// And round them    	
+    	System.out.print(this.getNmrOfRows() + " ");
+    	System.out.print(this.getNmrOfColumns() + " ");
+    	
+        for(int i = 0; i < this.matrix.size(); i++){
+            for(int j = 0; j < this.matrix.get(i).size(); j++){
+                double value = this.matrix.get(i).get(j);
+                int scale = (int) Math.pow(10, 1);
+                double roundedValue = (double) Math.round(value * scale) / scale;
+        		System.out.print(roundedValue + " ");
+            }
         }
     }
 
