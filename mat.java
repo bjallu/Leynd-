@@ -101,10 +101,8 @@ public class mat {
         if (this.getNmrOfColumns() != multBy.getNmrOfRows()|| this.getNmrOfRows()!=1) {
             throw new java.lang.RuntimeException("Dimensions do not match!");
         } else {
-            for (int i = 0; i<this.getNmrOfRows();i++) {
-                for (int j = 0; j<multBy.getNmrOfRows();j++){
-                    result.setElement(i,col,result.getElement(i,col)+this.getElement(i,j)*multBy.getElement(j,col));
-                }
+            for (int j = 0; j<multBy.getNmrOfRows();j++){
+                result.setElement(0,j,result.getElement(0,j)+this.getElement(0,j)*multBy.getElement(j,col));
             }
         }
         return result;
@@ -114,7 +112,7 @@ public class mat {
         Double sum = 0.0;
         int scale = (int) Math.pow(10, 6); // prufa med scale 7 ef etta virkar ekki
         if (this.getNmrOfRows() != 1){
-            throw new java.lang.RuntimeException("Must be have dimensions 1XM");
+            throw new java.lang.RuntimeException("Must have dimensions 1XM");
         } else {
             for (Double d:matrix.get(0)){
                 sum += (double) Math.round(d * scale) / scale;
