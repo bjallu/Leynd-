@@ -13,9 +13,9 @@ public class HMM2 {
         mat T2 = new mat(obs.size(),A.getNmrOfRows());
         
         for(int l = 0; l<A.getNmrOfRows(); l++) {
-        	T1 = pi.dotProductColumn(B,Integer.parseInt(obs.get(0)));
+        	double value = pi.getElement(0, l) * B.getElement(l, Integer.parseInt(obs.get(0)));
+        	T1.setElement(0, l, value);
         }
-        
         //boolean isFirst = true;
         for (int i = 1; i<obs.size(); i++){
         	for(int j = 0; j<A.getNmrOfRows(); j++) {
@@ -26,37 +26,29 @@ public class HMM2 {
         		
         		for(int m = 0; m<A.getNmrOfRows(); m++) {
         			
-        			double movingProbabilty = T1.getElement(i-1, m) * A.getElement(j, m);
+        			double movingProbabilty = T1.getElement(i-1, m) * A.getElement(m, j);			
         			transitionProbabilities.add(movingProbabilty);
         			
         		}
         		
-        		//double tmp = T1.getElement(j, i-1)*A.getElement(k, j);
-        		//mat tempT1 = T1.dotProductColumn(multBy, col);
-        			
-        		System.out.println(transitionProbabilities);
-        		
         		double bestProbability = max(transitionProbabilities);
+        		double whichStateHadTheBestProbability = argMax(transitionProbabilities);
         		// Get all next available probabilities
-        		double prob = bestProbability * B.getElement(j, Integer.parseInt(obs.get(i)));
+        		double prob = bestProbability * B.getElement(j, Integer.parseInt(obs.get(i)));        		
         		T1.setElement(i, j, prob);
-        		//T2.setElement(i, j, (double)argMax(transitionProbabilities));
-        		
+        		T2.setElement(i, j, whichStateHadTheBestProbability);
         	}
-        }
-        /*
-        mat thePath = new mat(1,obs.size());       
-        int argMax = argMax(T1.getRow(obs.size()));        
-        thePath.setElement(0, obs.size(), T2.getElement(obs.size(), argMax));
-        for(int p = 0; p<obs.size()-1;p++) {
-        	double value = T2.getElement(p, argMax(T1.getRow(p)));
+        }              
+        
+        mat thePath = new mat(1,obs.size());     
+        int argMax = argMax(T1.getRow(obs.size()-1));
+        //thePath.setElement(0, obs.size()-1, (double) argMax);
+        thePath.setElement(0, obs.size()-1, T2.getElement(obs.size()-1, argMax));
+        for(int p = obs.size()-2; p>-1;p--) {
+        	double value = argMax(T2.getRow(p));
         	thePath.setElement(0, p, value);
         }
-        thePath.printMatrix();
         return thePath;
-        */
-        T1.printMatrix();
-        return T2;
     }
     
     public static double max (List<Double> matrix)
@@ -106,7 +98,8 @@ public class HMM2 {
             ind++;
         }
 
-        mat alpha = ViterbiAlgrimi(A,B,pi,obs);      
+        mat alpha = ViterbiAlgrimi(A,B,pi,obs);
+        alpha.printMatrixForKattis();
 
     }
 
