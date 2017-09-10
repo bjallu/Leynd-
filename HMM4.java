@@ -109,17 +109,17 @@ public class HMM4 {
 
     public static lambda BaumWelch(mat oldA, mat oldB, mat oldpi, List<String> obs){
         mat A = oldA; mat B = oldB; mat pi = oldpi;
-        List<mat> digamma = new ArrayList<>();
-        mat gamma = new mat(obs.size(),A.getNmrOfRows());
-        List<Double> c = new ArrayList<>();
-        mat beta = new mat(obs.size(),A.getNmrOfRows());
-        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());
         int maxIters = 1000;
         int iters = 0;
         Double oldLogProb = Double.NEGATIVE_INFINITY;
+        mat gamma = new mat(obs.size(),A.getNmrOfRows());
+        mat beta = new mat(obs.size(),A.getNmrOfRows());
+        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());
 
         whileloop:
         while (iters<maxIters){
+            List<Double> c = new ArrayList<>();
+            List<mat> digamma = new ArrayList<>();
 
             // calc alpha
             /*
