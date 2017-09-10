@@ -107,7 +107,8 @@ public class HMM4 {
         return beta;
     }
 
-    public static lambda BaumWelch(mat A, mat B, mat pi, List<String> obs){
+    public static lambda BaumWelch(mat oldA, mat oldB, mat oldpi, List<String> obs){
+        mat A = oldA; mat B = oldB; mat pi = oldpi;
         List<mat> digamma = new ArrayList<>();
         mat gamma = new mat(obs.size(),A.getNmrOfRows());
         List<Double> c = new ArrayList<>();
@@ -121,6 +122,7 @@ public class HMM4 {
         while (iters<maxIters){
 
             // calc alpha
+            /*
             mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
             boolean isFirst = true;
             for (int ind = 0; ind<obs.size();ind++){
@@ -150,11 +152,42 @@ public class HMM4 {
                     }
                     alpha.setRow(ind, currAlpha.getRow(0));
                 }
+            }*/
+
+            Double c0 = 0.0;
+            Integer o0 = Integer.parseInt(obs.get(0));
+            for (int i = 0; i<A.getNmrOfColumns();i++){
+                alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+                c0 += alpha.getElement(0,i);
+            }
+            c0 = 1.0/c0;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(0,i,c0*alpha.getElement(0,i));
+            }
+            c.add(c0);
+
+            for (int t=1;t<obs.size();t++){
+                Double ct = 0.0;
+                Integer o = Integer.parseInt(obs.get(t));
+                for (int i=0;i<A.getNmrOfColumns();i++){
+                    Double currAlpha = 0.0;
+                    for (int j=0;j<A.getNmrOfColumns();j++){
+                        currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                    }
+                    currAlpha = currAlpha*B.getElement(i,o);
+                    ct += currAlpha;
+                    alpha.setElement(t,i,currAlpha);
+                }
+                ct = 1.0/ct;
+                for (int i = 0;i<A.getNmrOfColumns();i++){
+                    alpha.setElement(t,i,ct*alpha.getElement(t,i));
+                }
+                c.add(ct);
             }
 
             // calc beta
             for (int i = 0; i<A.getNmrOfColumns();i++){
-                beta.setElement(obs.size()-1,i,1.0);
+                beta.setElement(obs.size()-1,i,c.get(obs.size()-1));
             }
             for (int t = obs.size()-2;t>=0;t--){
                 int o = Integer.parseInt(obs.get(t+1));
@@ -181,7 +214,7 @@ public class HMM4 {
                 for (int i = 0;i<A.getNmrOfColumns();i++){
                     Double currGamma = 0.0;
                     for (int j=0;j<A.getNmrOfColumns();j++){
-                        Double currDiGamma = alpha.getElement(t,i)*A.getElement(i,j)*B.getElement(j,o)*beta.getElement(t+1,j)/denom;
+                        Double currDiGamma = (alpha.getElement(t,i)*A.getElement(i,j)*B.getElement(j,o)*beta.getElement(t+1,j))/denom;
                         currGamma += currDiGamma;
                         digammaMat.setElement(i,j,currDiGamma);
                     }
@@ -237,7 +270,7 @@ public class HMM4 {
             for (int t = 0;t<obs.size();t++){
                 logProb += Math.log(c.get(t));
             }
-            logProb = -1*logProb;
+            logProb = -1.0*logProb;
 
             iters++;
             if (iters<maxIters && logProb>oldLogProb){
@@ -271,7 +304,7 @@ public class HMM4 {
         }
 
         lambda l = BaumWelch(A,B,pi,obs);
-        l.getA().printMatrix();
-        l.getB().printMatrix();
+        l.getA().printMatrixForKattis2();
+        l.getB().printMatrixForKattis2();
     }
 }
