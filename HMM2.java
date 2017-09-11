@@ -7,48 +7,55 @@ import java.util.Scanner;
 
 public class HMM2 {
 	
-    public static mat ViterbiAlgrimi(mat A, mat B, mat pi, List<String> obs){
+    public static int[] ViterbiAlgrimi(mat A, mat B, mat pi, List<String> obs){
         
-    	mat T1 = new mat(obs.size(),A.getNmrOfRows());
-        mat T2 = new mat(obs.size(),A.getNmrOfRows());
+    	mat T1 = new mat(pi.getNmrOfColumns(),obs.size());
+        mat T2 = new mat(pi.getNmrOfColumns(),obs.size());
         
-        for(int l = 0; l<A.getNmrOfRows(); l++) {
-        	double value = pi.getElement(0, l) * B.getElement(l, Integer.parseInt(obs.get(0)));
-        	T1.setElement(0, l, value);
+        for(int i = 0; i<pi.getNmrOfColumns(); i++) {
+        	double value = pi.getElement(0, i) * B.getElement(i, Integer.parseInt(obs.get(0)));
+        	T1.setElement(i, 0, value);
+        	T2.setElement(i, 0, 0.0);
         }
         //boolean isFirst = true;
         for (int i = 1; i<obs.size(); i++){
-        	for(int j = 0; j<A.getNmrOfRows(); j++) {
+        	for (int j = 0; j<A.getNmrOfColumns(); j++) {
         		
-        		List<Double> transitionProbabilities = new ArrayList<Double>(A.getNmrOfRows());
-        		//mat currentDeltas = new mat(obs.size(),A.getNmrOfRows());
+        		List<Double> transitionProbabilities = new ArrayList<Double>(A.getNmrOfRows()-1);
+
         		// All possible odds
         		
-        		for(int m = 0; m<A.getNmrOfRows(); m++) {
+        		for(int m = 0; m<pi.getNmrOfColumns(); m++) {
         			
-        			double movingProbabilty = T1.getElement(i-1, m) * A.getElement(m, j);			
+        			double movingProbabilty = T1.getElement(m, i-1) * A.getElement(m, j);			
         			transitionProbabilities.add(movingProbabilty);
         			
         		}
         		
-        		double bestProbability = max(transitionProbabilities);
-        		double whichStateHadTheBestProbability = argMax(transitionProbabilities);
-        		// Get all next available probabilities
-        		double prob = bestProbability * B.getElement(j, Integer.parseInt(obs.get(i)));        		
-        		T1.setElement(i, j, prob);
-        		T2.setElement(i, j, whichStateHadTheBestProbability);
+        		double value = B.getElement(j, Integer.parseInt(obs.get(i))) * max(transitionProbabilities);		
+        		T1.setElement(j, i, value);
+        		double id = argMax(transitionProbabilities);
+        		T2.setElement(j, i, id);
         	}
         }              
         
-        mat thePath = new mat(1,obs.size());     
-        int argMax = argMax(T1.getRow(obs.size()-1));
-        //thePath.setElement(0, obs.size()-1, (double) argMax);
-        thePath.setElement(0, obs.size()-1, T2.getElement(obs.size()-1, argMax));
-        for(int p = obs.size()-2; p>-1;p--) {
-        	double value = argMax(T2.getRow(p));
-        	thePath.setElement(0, p, value);
+		List<Double> finalState = new ArrayList<Double>();
+		// Now we go backwards through the ids to find the likeliest state path		
+		for(int i = 0; i<pi.getNmrOfColumns(); i++) {			
+			double value = T1.getElement(i, obs.size()-1);			
+			finalState.add(value);			
+		}
+		
+        double lastState = argMax(finalState);       
+        int[] theIdsCorrespondingToTheLikeliestStates = new int[obs.size()];            
+        theIdsCorrespondingToTheLikeliestStates[obs.size()-1] = (int) lastState;
+        
+        for(int p = obs.size()-2; p>=0;p--) {
+        	int currentState = theIdsCorrespondingToTheLikeliestStates[p+1];
+        	double value = T2.getElement(currentState, p+1);
+        	theIdsCorrespondingToTheLikeliestStates[p] = (int) value;
         }
-        return thePath;
+        return theIdsCorrespondingToTheLikeliestStates;
     }
     
     public static double max (List<Double> matrix)
@@ -83,9 +90,9 @@ public class HMM2 {
         mat pi = new mat();
         List<String> obs = new ArrayList<>();
         // Read input
-	    File tmpfile = new File("C:\\Users\\bjart\\Downloads\\hmm3\\hmm3_01.in");
-	    Scanner sc = new Scanner(tmpfile);
-        //Scanner sc = new Scanner(System.in);
+        //File tmpFile = new File("C:\\Users\\bjart\\Downloads\\hmm3\\hmm3_01.in");
+        //Scanner sc = new Scanner(tmpFile);
+        Scanner sc = new Scanner(System.in);
         int ind = 0;
         while (sc.hasNextLine()){
             switch (ind){
@@ -98,8 +105,11 @@ public class HMM2 {
             ind++;
         }
 
-        mat alpha = ViterbiAlgrimi(A,B,pi,obs);
-        alpha.printMatrixForKattis();
+        int[] viterbiDecoder = ViterbiAlgrimi(A,B,pi,obs);
+        for(int id:viterbiDecoder) {
+        	System.out.print(id + " ");
+        }
+        //alpha.printMatrixForKattis();
 
     }
 
