@@ -107,9 +107,9 @@ public class HMM4 {
         return beta;
     }
 
-    public static lambda BaumWelch(mat oldA, mat oldB, mat oldpi, List<String> obs){
+    public static lambda BaumWelchTrain(mat oldA, mat oldB, mat oldpi, List<String> obs){
         mat A = oldA; mat B = oldB; mat pi = oldpi;
-        int maxIters = 1000;
+        int maxIters = 35;
         int iters = 0;
         Double oldLogProb = Double.NEGATIVE_INFINITY;
         mat gamma = new mat(obs.size(),A.getNmrOfRows());
@@ -276,6 +276,7 @@ public class HMM4 {
             if (iters<maxIters && logProb>oldLogProb){
                 oldLogProb = logProb;
             } else {
+                if(iters<maxIters){ System.out.println("converges in: "+iters+" iterations"); }
                 break whileloop;
             }
         }
@@ -302,8 +303,9 @@ public class HMM4 {
             }
             ind++;
         }
+        obs = obs.subList(0,10);
 
-        lambda l = BaumWelch(A,B,pi,obs);
+        lambda l = BaumWelchTrain(A,B,pi,obs);
         l.getA().printMatrixForKattis2();
         l.getB().printMatrixForKattis2();
     }

@@ -1,4 +1,6 @@
 import java.util.*;
+import java.text.DecimalFormat;
+import java.math.RoundingMode;
 
 public class HMM1 {
 
@@ -8,10 +10,11 @@ public class HMM1 {
         for (String o:obs){
             int oInt = Integer.parseInt(o);
             if (isFirst){
-                currAlpha = pi.dotProductColumn(B,Integer.parseInt(obs.get(0)));
+                currAlpha = pi.dotProductColumn(B,oInt);
                 isFirst = !isFirst;
             } else {
-                currAlpha = currAlpha.product(A).dotProductColumn(B,oInt);
+                currAlpha = currAlpha.product(A);
+                currAlpha = currAlpha.dotProductColumn(B,oInt);
             }
         }
         return currAlpha;
@@ -30,13 +33,16 @@ public class HMM1 {
                 case 0: A = new mat(sc.nextLine());
                 case 1: B = new mat(sc.nextLine());
                 case 2: pi = new mat(sc.nextLine());
-                case 3: obs = new ArrayList<>(Arrays.asList(sc.nextLine().split(" ")));
+                case 3: obs = new ArrayList<>(Arrays.asList(sc.nextLine().trim().split(" ")));
                         obs = obs.subList(1,obs.size());
             }
             ind++;
         }
 
         mat alpha = calcAlphaPass(A,B,pi,obs);
+        //DecimalFormat df = new DecimalFormat("#.######");
+        //df.setRoundingMode(RoundingMode.CEILING);
+        //System.out.println(df.format(alpha.sumElements()));
         System.out.println(alpha.sumElements());
 
     }

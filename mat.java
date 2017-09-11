@@ -15,7 +15,7 @@ public class mat {
     public mat(int N,int M){
         nmrOfRows = N;
         nmrOfColumns = M;
-        matrix = new ArrayList<>();
+        matrix = new ArrayList<>(N);
         for (int i = 0; i<N; i++){
             Double[] arr = new Double[M];
             ArrayList<Double> row = new ArrayList<>(Arrays.asList(arr));
@@ -27,7 +27,7 @@ public class mat {
     public mat(int N,int M,Double initialValue) {
         nmrOfRows = N;
         nmrOfColumns = M;
-        matrix = new ArrayList<>();
+        matrix = new ArrayList<>(N);
         for (int i = 0; i < N; i++) {
             Double[] arr = new Double[M];
             ArrayList<Double> row = new ArrayList<>(Arrays.asList(arr));
@@ -48,10 +48,10 @@ public class mat {
         nmrOfColumns = Integer.parseInt(items.get(1));
         items = items.subList(2,items.size());
         int currRow = 0;
-        matrix = new ArrayList<>();
+        matrix = new ArrayList<>(nmrOfRows);
         while(currRow<nmrOfRows){
             List<String> tmpStr = new ArrayList<>(items.subList(currRow*nmrOfColumns,(currRow+1)*nmrOfColumns));
-            List<Double> tmpDouble = new ArrayList<>();
+            List<Double> tmpDouble = new ArrayList<>(nmrOfColumns);
             for(String s: tmpStr) tmpDouble.add(Double.valueOf(s));
             matrix.add(tmpDouble);
             currRow++;
@@ -193,6 +193,20 @@ public class mat {
         		System.out.print(roundedValue + " ");
             }
         }
+    }
+
+    public void printMatrixForKattis2() {
+        // First print the matrix dimensions then loop through the values
+        // And round them
+        String str = this.getNmrOfRows()+" "+this.getNmrOfColumns();
+
+        for(int i = 0; i < this.matrix.size(); i++){
+            for(int j = 0; j < this.matrix.get(i).size(); j++){
+                double value = this.matrix.get(i).get(j);
+                str = str + " " + value;
+            }
+        }
+        System.out.println(str);
     }
 
     public static void main(String[] args){
