@@ -9,23 +9,23 @@ public class HMM2 {
 	
     public static int[] ViterbiAlgrimi(mat A, mat B, mat pi, List<String> obs){
         
-    	mat T1 = new mat(pi.getNmrOfColumns(),obs.size());
-        mat T2 = new mat(pi.getNmrOfColumns(),obs.size());
+    	mat T1 = new mat(A.getNmrOfRows(),obs.size());
+        mat T2 = new mat(A.getNmrOfRows(),obs.size());
         
-        for(int i = 0; i<pi.getNmrOfColumns(); i++) {
+        for(int i = 0; i<A.getNmrOfRows(); i++) {
         	double value = pi.getElement(0, i) * B.getElement(i, Integer.parseInt(obs.get(0)));
         	T1.setElement(i, 0, value);
         	T2.setElement(i, 0, 0.0);
         }
         //boolean isFirst = true;
         for (int i = 1; i<obs.size(); i++){
-        	for (int j = 0; j<A.getNmrOfColumns(); j++) {
+        	for (int j = 0; j<A.getNmrOfRows(); j++) {
         		
         		List<Double> transitionProbabilities = new ArrayList<Double>(A.getNmrOfRows()-1);
 
         		// All possible odds
         		
-        		for(int m = 0; m<pi.getNmrOfColumns(); m++) {
+        		for(int m = 0; m<A.getNmrOfRows(); m++) {
         			
         			double movingProbabilty = T1.getElement(m, i-1) * A.getElement(m, j);			
         			transitionProbabilities.add(movingProbabilty);
@@ -41,7 +41,7 @@ public class HMM2 {
         
 		List<Double> finalState = new ArrayList<Double>();
 		// Now we go backwards through the ids to find the likeliest state path		
-		for(int i = 0; i<pi.getNmrOfColumns(); i++) {			
+		for(int i = 0; i<A.getNmrOfRows(); i++) {			
 			double value = T1.getElement(i, obs.size()-1);			
 			finalState.add(value);			
 		}
@@ -50,7 +50,7 @@ public class HMM2 {
         int[] theIdsCorrespondingToTheLikeliestStates = new int[obs.size()];            
         theIdsCorrespondingToTheLikeliestStates[obs.size()-1] = (int) lastState;
         
-        for(int p = obs.size()-2; p>=0;p--) {
+        for(int p = obs.size()-2; p>-1;p--) {
         	int currentState = theIdsCorrespondingToTheLikeliestStates[p+1];
         	double value = T2.getElement(currentState, p+1);
         	theIdsCorrespondingToTheLikeliestStates[p] = (int) value;
