@@ -128,15 +128,16 @@ class Player {
     		for(int i = 0; i < pState.getNumBirds(); i++) {  			
     			double maxProbability = 0;
     			int specieID = 0;    			
-                Integer[] seqArray = new Integer[pState.getBird(i).getSeqLength()];
+                List<Integer> seqArray = new ArrayList<Integer>();
                 for (int j = 0; j< pState.getBird(i).getSeqLength();j++){
-                    seqArray[j] = pState.getBird(i).getObservation(j);
-                }
-                List<Integer> seq = Arrays.asList(seqArray);   			
+                	int tmpObsv = pState.getBird(i).getObservation(j);
+                	if(tmpObsv != -1) seqArray.add(tmpObsv);
+                	else continue; 
+                }			
     			for(int k = 0; k<DifferentBirdSpecies.length; k++) {
     				HMM tmpHMM = DifferentBirdSpecies[k];
 	    				if(tmpHMM != null) {
-		    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seq);
+		    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
 		    				if(tmpProbability > maxProbability) {
 		    					maxProbability = tmpProbability;
 		    					specieID = k;
@@ -191,8 +192,7 @@ class Player {
 	            tmpHMM.BaumWelchTrain(seq);
             }
 		}  		
-    	// Could need a second check if a certain bird spotting model hasn't been trained   	
-    	
+    	// Could need a second check if a certain bird spotting model hasn't been trained   	   	
     }
 
     public static final Action cDontShoot = new Action(-1, -1);
