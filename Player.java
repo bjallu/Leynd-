@@ -183,16 +183,15 @@ class Player {
 			HMM tmpHMM = DifferentBirdSpecies[specieOftmpBird];
             Integer[] seqArray = new Integer[tmpBirdPerson.getSeqLength()];
             
-            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){
-                seqArray[j] = tmpBirdPerson.getObservation(j);
+            if(!tmpBirdPerson.isDead()) {           
+	            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){	            	
+	                seqArray[j] = tmpBirdPerson.getObservation(j);
+	            }                    
+	            List<Integer> seq = Arrays.asList(seqArray);
+	            tmpHMM.BaumWelchTrain(seq);
             }
-            
-            List<Integer> seq = Arrays.asList(seqArray);
-            tmpHMM.BaumWelchTrain(seq);
-		}
-    		
-    	// Could need a second check if a certain bird spotting model hasn't been trained
-    	
+		}  		
+    	// Could need a second check if a certain bird spotting model hasn't been trained   	
     	
     }
 
