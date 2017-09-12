@@ -176,7 +176,22 @@ public class HMM {
 
         return nextEmissionProbs.getRow(0);
     }
-
+    
+    public double HowLikelyIsThisObservation(List<Integer> obs) {
+        
+    	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
+        boolean isFirst = true;
+        for (int o:obs){
+            if (isFirst){
+                currAlpha = pi.dotProductColumn(B,o);
+                isFirst = !isFirst;
+            } else {
+                currAlpha = currAlpha.product(A);
+                currAlpha = currAlpha.dotProductColumn(B,o);
+            }
+        }
+        return alpha.sumElements();
+    }
 
 
     public static void main(String[] args){
