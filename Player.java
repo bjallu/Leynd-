@@ -10,7 +10,6 @@ class Player {
     // we need as many hmms as there are species to try to distinguish them apart
     // List<HMM> DifferentBirdSpecies = new ArrayList<>(Constants.COUNT_SPECIES);
     HMM[] DifferentBirdSpecies = new HMM[Constants.COUNT_SPECIES];
-    private final int NMR_OF_STATES = 5;
 
     public Player() {
     	
@@ -40,6 +39,8 @@ class Player {
          * Here you should write your clever algorithms to get the best action.
          * This skeleton never shoots.
          */
+
+
         if (pState.getRound() != currRound) {
             currRound = pState.getRound();
             birdPatternHMMs.clear();
@@ -50,7 +51,9 @@ class Player {
         // ie dyving circling fx and are initialized in such a way
 
         int sequenceLength = pState.getBird(0).getSeqLength();
-        if (sequenceLength < 35) {return cDontShoot;}
+        List<Integer> seq = new ArrayList<>();
+        //if (sequenceLength < (int) (100-pState.getNumBirds()*1.6)) {return cDontShoot;}
+        if (sequenceLength < 65) {return cDontShoot;}
 
         if (birdPatternHMMs.size() == 0) {
             for (int i = 0; i < pState.getNumBirds(); i++) {
@@ -58,9 +61,10 @@ class Player {
             }
         }
 
+
         int mostPredictableBird = -1;
         int nextPredictedMove = -1;
-        double predictionThresholdState = 0.65;
+        double predictionThresholdState = 0.67;
 
         for (int b = 0; b<pState.getNumBirds(); b++){
             if (pState.getBird(b).isDead()){
@@ -71,12 +75,12 @@ class Player {
             for (int i = 0; i< pState.getBird(b).getSeqLength();i++){
                 seqArray[i] = pState.getBird(b).getObservation(i);
             }
-            List<Integer> seq = Arrays.asList(seqArray);
+            seq = Arrays.asList(seqArray);
             HMM birdHMM = new HMM();
             birdHMM.BaumWelchTrain(seq);
             birdPatternHMMs.set(b,birdHMM);
 
-            List<Double> nextStatesProb = birdHMM.predictNextEmissions();
+            List<Double> nextStatesProb = birdHMM.predictNextEmissions(seq);
             int mostProbableState = nextStatesProb.indexOf(Collections.max(nextStatesProb));
             if (nextStatesProb.get(mostProbableState)>predictionThresholdState){
                 mostPredictableBird = b;
@@ -90,6 +94,7 @@ class Player {
         } else {
             return new Action(mostPredictableBird,nextPredictedMove);
         }
+        //return cDontShoot;
 
 
         // This line would predict that bird 0 will move right and shoot at it.
@@ -113,15 +118,20 @@ class Player {
          * Here you should write your clever algorithms to guess the species of
          * each bird. This skeleton makes no guesses, better safe than sorry!
          */
-    	
+
+        List<Integer> seq = new ArrayList<>();
+
+
 		int[] lGuess = new int[pState.getNumBirds()];
-    	
+		double guessThreshold = 0.65;
     	// first round identify the pattern for species  and mark them into the models and then we can guess?
 
+        for (int i = 0; i < pState.getNumBirds(); i++) {
+            lGuess[i] = Constants.SPECIES_UNKNOWN; // most common bird as far as I know
+        }
+
     	if(pState.getRound() == 0) {
-            for (int i = 0; i < pState.getNumBirds(); ++i) {
-            	lGuess[i] = Constants.SPECIES_PIGEON; // most common bird as far as I know
-            }
+
     	}
     	else {
     		// We try to guess dem species
@@ -144,9 +154,13 @@ class Player {
 		    				}
 	    				}
     			}
-    			lGuess[i] = specieID;
+    			if (maxProbability>=guessThreshold) {
+                    lGuess[i] = specieID;
+                } else {
+                    lGuess[i] = Constants.SPECIES_UNKNOWN;
+                }
     		}
-    	}    	
+    	}
         return lGuess;
     }
 
@@ -181,7 +195,6 @@ class Player {
 			
 			Bird tmpBirdPerson = pState.getBird(i);
 			int specieOftmpBird = pSpecies[i];
-			HMM tmpHMM = DifferentBirdSpecies[specieOftmpBird];
             Integer[] seqArray = new Integer[tmpBirdPerson.getSeqLength()];
             
             if(!tmpBirdPerson.isDead()) {           
@@ -189,10 +202,10 @@ class Player {
 	                seqArray[j] = tmpBirdPerson.getObservation(j);
 	            }                    
 	            List<Integer> seq = Arrays.asList(seqArray);
-	            tmpHMM.BaumWelchTrain(seq);
+                DifferentBirdSpecies[specieOftmpBird].BaumWelchTrain(seq);
             }
-		}  		
-    	// Could need a second check if a certain bird spotting model hasn't been trained   	   	
+		}
+        // Could need a second check if a certain bird spotting model hasn't been trained
     }
 
     public static final Action cDontShoot = new Action(-1, -1);

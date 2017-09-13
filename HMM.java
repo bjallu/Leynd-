@@ -21,10 +21,59 @@ public class HMM {
         this.A = new mat(Initials.TRANSITION);
         this.B = new mat(Initials.EMISSION);
         this.pi = new mat(Initials.INITIAL_STATES);
+        this.fillMatrix(A);
+        this.fillMatrix(B);
+        this.fillMatrix(pi);
     }
 
-    public double getProb() {
-        return this.oldLogProb;
+    private void fillMatrix(mat matrix){
+        Random r = new Random();
+        for(int i = 0; i < matrix.getNmrOfRows(); i++){
+            double sum = 0;
+            for(int j = 0; j < matrix.getNmrOfColumns(); j++){
+                double rand = r.nextDouble();
+                matrix.setElement(i,j,rand);
+                sum += rand;
+            }
+
+            for(int j = 0; j < matrix.getNmrOfColumns(); j++){
+                matrix.setElement(i,j,matrix.getElement(i,j)/sum);
+            }
+        }
+    }
+
+    public mat alphaMatrix(List<Integer> obs){
+        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());
+        mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
+        boolean isFirst = true;
+        for (int ind = 0; ind<obs.size();ind++){
+            int oInt = obs.get(ind);
+            Double ct = 0.0;
+            if (isFirst){
+                currAlpha = pi.dotProductColumn(B,oInt);
+                for (Double d : currAlpha.getRow(0)){
+                    ct += d;
+                }
+                ct = 1/ct;
+                for (int i=0;i<pi.getNmrOfColumns();i++){
+                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
+                }
+                alpha.setRow(0, currAlpha.getRow(0));
+                isFirst = !isFirst;
+            } else {
+                currAlpha = currAlpha.product(A).dotProductColumn(B,oInt);
+                for (Double d : currAlpha.getRow(0)){
+                    ct += d;
+                }
+                ct = 1/ct;
+                for (int i=0;i<pi.getNmrOfColumns();i++){
+                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
+                }
+                alpha.setRow(ind, currAlpha.getRow(0));
+            }
+
+        }
+        return alpha;
     }
 
     public void BaumWelchTrain(List<Integer> obs){
@@ -153,7 +202,7 @@ public class HMM {
             // compute log[P(O|lambda)]
             double logProb = 0.0;
             for (int t = 0;t<obs.size();t++){
-                logProb += Math.log(c.get(t));
+                logProb += Math.log10(c.get(t));
             }
             logProb = -1.0*logProb;
 
@@ -166,17 +215,98 @@ public class HMM {
         }
     }
 
-    public List<Double> predictNextEmissions(){
-        List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
-        mat probStates = new mat(1,lastGamma.size());
-        probStates.setRow(0,lastGamma);
+    public List<Double> predictNextEmissions(List<Integer> o){
+        //List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
+        //mat probStates = new mat(1,lastGamma.size());
+        //probStates.setRow(0,lastGamma);
+        mat tmpAlpha = this.alphaMatrix(o);
+        mat probStates = new mat(1,tmpAlpha.getNmrOfColumns());
+        probStates.setRow(0,tmpAlpha.getRow(o.size()-1));
+
         mat nextStatesProb = probStates.product(A);
 
         mat nextEmissionProbs = nextStatesProb.product(B);
 
         return nextEmissionProbs.getRow(0);
     }
-    
+
+    public List<Integer> ViterbiAlgrim(List<Integer> obs){
+
+        mat T1 = new mat(A.getNmrOfRows(),obs.size());
+        mat T2 = new mat(A.getNmrOfRows(),obs.size());
+
+        for(int i = 0; i<A.getNmrOfRows(); i++) {
+            double value = pi.getElement(0, i) * B.getElement(i, obs.get(0));
+            T1.setElement(i, 0, value);
+            T2.setElement(i, 0, 0.0);
+        }
+        //boolean isFirst = true;
+        for (int i = 1; i<obs.size(); i++){
+            for (int j = 0; j<A.getNmrOfRows(); j++) {
+
+                List<Double> transitionProbabilities = new ArrayList<Double>(A.getNmrOfRows()-1);
+
+                // All possible odds
+
+                for(int m = 0; m<A.getNmrOfRows(); m++) {
+
+                    double movingProbabilty = T1.getElement(m, i-1) * A.getElement(m, j);
+                    transitionProbabilities.add(movingProbabilty);
+
+                }
+
+                double value = B.getElement(j, obs.get(i)) * max(transitionProbabilities);
+                T1.setElement(j, i, value);
+                double id = argMax(transitionProbabilities);
+                T2.setElement(j, i, id);
+            }
+        }
+
+        List<Double> finalState = new ArrayList<Double>();
+        // Now we go backwards through the ids to find the likeliest state path
+        for(int i = 0; i<A.getNmrOfRows(); i++) {
+            double value = T1.getElement(i, obs.size()-1);
+            finalState.add(value);
+        }
+
+        double lastState = argMax(finalState);
+        Integer[] theIdsCorrespondingToTheLikeliestStates = new Integer[obs.size()];
+        theIdsCorrespondingToTheLikeliestStates[obs.size()-1] = (int) lastState;
+
+        for(int p = obs.size()-2; p>-1;p--) {
+            int currentState = theIdsCorrespondingToTheLikeliestStates[p+1];
+            double value = T2.getElement(currentState, p+1);
+            theIdsCorrespondingToTheLikeliestStates[p] = (int) value;
+        }
+        return Arrays.asList(theIdsCorrespondingToTheLikeliestStates);
+    }
+
+    public static double max (List<Double> matrix)
+    {
+        double max = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < matrix.size(); i++) {
+            double x = matrix.get(i);
+            if (x > max) {
+                max = x;
+            }
+        }
+        return max;
+    }
+
+    public static int argMax (List<Double> matrix)
+    {
+        int id = -1;
+        double max = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < matrix.size(); i++) {
+            double x = matrix.get(i);
+            if (x > max) {
+                max = x;
+                id = i;
+            }
+        }
+        return id;
+    }
+
     public double HowLikelyIsThisObservation(List<Integer> obs) {
         
     	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
@@ -190,7 +320,7 @@ public class HMM {
                 currAlpha = currAlpha.dotProductColumn(B,o);
             }
         }
-        return alpha.sumElements();
+        return currAlpha.sumElements();
     }
 
 
