@@ -9,6 +9,7 @@ class Player {
     int currRound = -1;
     // we need as many hmms as there are species to try to distinguish them apart
     // List<HMM> DifferentBirdSpecies = new ArrayList<>(Constants.COUNT_SPECIES);
+    private List<Double> probabilityValues = new ArrayList<>();
     HMM[] DifferentBirdSpecies = new HMM[Constants.COUNT_SPECIES];
     private final int NMR_OF_STATES = 5;
 
@@ -120,33 +121,43 @@ class Player {
 
     	if(pState.getRound() == 0) {
             for (int i = 0; i < pState.getNumBirds(); ++i) {
-            	lGuess[i] = Constants.SPECIES_PIGEON; // most common bird as far as I know
+            	lGuess[i] = Constants.SPECIES_UNKNOWN; // most common bird as far as I know
             }
     	}
     	else {
     		// We try to guess dem species
     		for(int i = 0; i < pState.getNumBirds(); i++) {  			
-    			double maxProbability = 0;
-    			int specieID = 0;    			
+    			double maxProbability = Double.NEGATIVE_INFINITY;
+    			int specieID = -1;    			
                 List<Integer> seqArray = new ArrayList<Integer>();
-                for (int j = 0; j< pState.getBird(i).getSeqLength();j++){
-                	int tmpObsv = pState.getBird(i).getObservation(j);
+                Bird tmpBirdperson = pState.getBird(i);
+                
+                for (int j = 0; j< tmpBirdperson.getSeqLength();j++){
+                	int tmpObsv = tmpBirdperson.getObservation(j);
                 	if(tmpObsv != -1) seqArray.add(tmpObsv);
                 	else continue; 
-                }			
-    			for(int k = 0; k<DifferentBirdSpecies.length; k++) {
-    				HMM tmpHMM = DifferentBirdSpecies[k];
-	    				if(tmpHMM != null) {
-		    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
-		    				if(tmpProbability > maxProbability) {
-		    					maxProbability = tmpProbability;
-		    					specieID = k;
+                }
+                
+                if(seqArray.size()>45) { 
+	    			for(int k = 0; k<DifferentBirdSpecies.length; k++) {
+	    				HMM tmpHMM = DifferentBirdSpecies[k];
+		    				if(tmpHMM != null) {
+			    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
+			    				if(tmpProbability > maxProbability) {
+			    					maxProbability = tmpProbability;
+			    					specieID = k;
+			    				}
 		    				}
-	    				}
-    			}
-    			lGuess[i] = specieID;
+	    			}
+    				lGuess[i] = specieID;
+    				probabilityValues.add(maxProbability);
+                }
+                else {
+                	lGuess[i] = Constants.SPECIES_UNKNOWN;	
+                }
     		}
-    	}    	
+    	}    
+    	
         return lGuess;
     }
 
@@ -181,17 +192,23 @@ class Player {
 			
 			Bird tmpBirdPerson = pState.getBird(i);
 			int specieOftmpBird = pSpecies[i];
-			HMM tmpHMM = DifferentBirdSpecies[specieOftmpBird];
-            Integer[] seqArray = new Integer[tmpBirdPerson.getSeqLength()];
-            
-            if(!tmpBirdPerson.isDead()) {           
-	            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){	            	
-	                seqArray[j] = tmpBirdPerson.getObservation(j);
-	            }                    
-	            List<Integer> seq = Arrays.asList(seqArray);
-	            tmpHMM.BaumWelchTrain(seq);
-            }
-		}  		
+			if(specieOftmpBird != -1) {
+				
+				HMM tmpHMM = DifferentBirdSpecies[specieOftmpBird];
+	            ArrayList<Integer> seqArray = new ArrayList<Integer>();
+                    
+	            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){
+	            	if(tmpBirdPerson.wasAlive(j)) seqArray.add(tmpBirdPerson.getObservation(j));
+	            	else break;
+	            }
+	           // List<Integer> seq = Arrays.asList(seqArray);
+	            if(seqArray.size()>35)tmpHMM.BaumWelchTrain(seqArray);
+			}
+		}
+		
+		System.err.println(probabilityValues.toString());
+		
+		
     	// Could need a second check if a certain bird spotting model hasn't been trained   	   	
     }
 

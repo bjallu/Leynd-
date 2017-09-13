@@ -153,7 +153,7 @@ public class HMM {
             // compute log[P(O|lambda)]
             double logProb = 0.0;
             for (int t = 0;t<obs.size();t++){
-                logProb += Math.log(c.get(t));
+                logProb += Math.log10(c.get(t));
             }
             logProb = -1.0*logProb;
 
@@ -190,9 +190,62 @@ public class HMM {
                 currAlpha = currAlpha.dotProductColumn(B,o);
             }
         }
-        return alpha.sumElements();
+        return currAlpha.sumElements();
     }
 
+    public void LogHMMModels() {
+    	this.A.LogMatrixes();
+    	this.B.LogMatrixes();
+    	this.pi.LogMatrixes();
+    }
+    
+    public mat AlphaPassSeqOdds(List<Integer> obs) {
+        // calc alpha
+    	List<Double> c = new ArrayList<>(obs.size());
+        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());   	 
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,c0*alpha.getElement(0,i));
+        }
+        c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,ct*alpha.getElement(t,i));
+            }
+            c.add(ct);
+        }        	
+        return alpha;        
+    }
+    
+    public double GetScaledOdds(List<Integer> obs) {
+    	mat alpha = AlphaPassSeqOdds(obs);
+    	// get the last row to get the odds of observing this seq from the given hmm
+    	double odds = 0;
+    	for(double d:alpha.getRow(obs.size()-1)) {
+    		odds += d;
+    	}
+    	
+    	return odds;
+    }
 
     public static void main(String[] args){
         mat A = new mat();

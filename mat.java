@@ -1,10 +1,13 @@
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class mat {
 
     private List<List<Double>> matrix;
     private int nmrOfColumns;
     private int nmrOfRows;
+    static final Logger LOGGER = Logger.getLogger("matrixLogger");
 
     public mat(){
         nmrOfColumns=0;
@@ -17,9 +20,9 @@ public class mat {
         nmrOfColumns = M;
         matrix = new ArrayList<>(N);
         for (int i = 0; i<N; i++){
-            Double[] arr = new Double[M];
+            Double[] arr = new Double[M]; 
             ArrayList<Double> row = new ArrayList<>(Arrays.asList(arr));
-            Collections.fill(row, 0.0);//fills all M entries with 0
+            Collections.fill(row, 0.0);//fills all M entries with 00
             matrix.add(row);
         }
     }
@@ -207,6 +210,22 @@ public class mat {
             }
         }
         System.out.println(str);
+    }
+    
+    public String matrixInfo() {
+    	String str = "";
+    	for(int i = 0; i < this.matrix.size(); i++){
+            for(int j = 0; j < this.matrix.get(i).size(); j++){
+                double value = this.matrix.get(i).get(j);
+                str = str + " " + value;
+            }
+        }
+    	return str;
+    }
+    
+    public void LogMatrixes() {
+    	String matrixInfo = matrixInfo();
+    	LOGGER.info(matrixInfo);
     }
 
     public static void main(String[] args){
