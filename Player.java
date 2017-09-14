@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Collections;
+import java.util.*;
 
 class Player {
 
@@ -11,7 +8,7 @@ class Player {
     // List<HMM> DifferentBirdSpecies = new ArrayList<>(Constants.COUNT_SPECIES);
     private List<Double> probabilityValues = new ArrayList<>();
     HMM[] DifferentBirdSpecies = new HMM[Constants.COUNT_SPECIES];
-    public ArrayList<ArrayList<HMM>> specieHmm = new ArrayList<ArrayList<HMM>>();
+    public List<List<HMM>> specieHmm = new ArrayList<List<HMM>>();
     private final int NMR_OF_STATES = 5;
     public static double[] guessProbabilityes;
     int[] guessIds;
@@ -23,6 +20,27 @@ class Player {
     		specieHmm.add(specieHmmChain);
     	}
     	
+    }
+
+    public static int likeliestSpecies(List<List<HMM>> Allhmms, List<Integer> obs){
+        int species = Constants.SPECIES_UNKNOWN;
+        double max = Double.NEGATIVE_INFINITY;
+        for (int currHMMs = 0; currHMMs< Allhmms.size(); currHMMs++) {
+            int normalizer = Allhmms.get(currHMMs).size();
+            double totalProbabilty = 0.0;
+            for (int i = 0; i<Allhmms.get(currHMMs).size();i++) {
+                if (Allhmms.get(currHMMs).get(i) != null) {
+                    double tmpProb = Allhmms.get(currHMMs).get(i).HowLikelyIsThisObservation(obs);
+                    totalProbabilty += tmpProb;
+                }
+            }
+            double tmp = totalProbabilty/normalizer;
+            if (tmp > max){
+                max = tmp;
+                species = currHMMs;
+            }
+        }
+        return species;
     }
 
     /**
@@ -45,19 +63,81 @@ class Player {
          * Here you should write your clever algorithms to get the best action.
          * This skeleton never shoots.
          */
+
+
+        if (pState.getRound() < 2){
+            return cDontShoot;
+        }
+        Integer[] nextMoves = new Integer[pState.getNumBirds()];
+        Double[] maxProbs = new Double[pState.getNumBirds()];
+        for (int i = 0; i<nextMoves.length;i++){
+            nextMoves[i]=0;
+            maxProbs[i]=0.0;
+        }
+
+
+        for (int b = 0; b < pState.getNumBirds();b++){
+            if (pState.getBird(b).getSeqLength()< 60){ return cDontShoot;}
+            if (pState.getBird(b).isDead()){
+                continue;
+            }
+            List<Integer> o = new ArrayList<>();
+            for (int i = 0; i< pState.getBird(b).getSeqLength();i++){
+                if (pState.getBird(b).getObservation(i) != -1){
+                    o.add(pState.getBird(b).getObservation(i));
+                }
+            }
+            int species = likeliestSpecies(specieHmm,o);
+            List<Integer> birdMoves = new ArrayList<>();
+            double maxProb = 0.0;
+            int bestMove = -1;
+
+            if (species != -1 && species != 5){
+                List<HMM> hmms = specieHmm.get(species);
+                for (HMM h: hmms){
+                    List<Double> nextEmissionsProb = h.predictNextEmissions(o);
+                    int mostProbableEmission = nextEmissionsProb.indexOf(Collections.max(nextEmissionsProb));
+                    if (maxProb<nextEmissionsProb.get(mostProbableEmission)){
+                        maxProb = nextEmissionsProb.get(mostProbableEmission);
+                        bestMove = mostProbableEmission;
+                    }
+                    birdMoves.add(mostProbableEmission);
+                }
+                int nmrOfItems = birdMoves.size();
+                Set<Integer> tmpSet = new HashSet<>();
+                tmpSet.addAll(birdMoves);
+                birdMoves.clear();
+                birdMoves.addAll(tmpSet);
+                if (nmrOfItems-birdMoves.size()>0.1*nmrOfItems && birdMoves.indexOf(bestMove)>-1){
+                    nextMoves[b] = bestMove;
+                    maxProbs[b] = maxProb;
+                }
+            }
+        }
+
+        int bestBird = Arrays.asList(maxProbs).indexOf(Collections.max(Arrays.asList(maxProbs)));
+        int bestMove = nextMoves[bestBird];
+        double bestProb = maxProbs[bestBird];
+
+
+        if (bestProb>0.8) {
+            return new Action(bestBird, bestMove);
+        } else {
+            return cDontShoot;
+        }
+
+        /*
         if (pState.getRound() != currRound) {
             currRound = pState.getRound();
             birdPatternHMMs.clear();
         }
-        
-        return cDontShoot;/*
-        
+
         // add some code that not only gets the next possible state but also 
         // compares it to some hmm that are optimesd to detect the 5 different patterns
         // ie dyving circling fx and are initialized in such a way
 
         int sequenceLength = pState.getBird(0).getSeqLength();
-        if (sequenceLength < 35) {return cDontShoot;}
+        if (sequenceLength < 65) {return cDontShoot;}
 
         if (birdPatternHMMs.size() == 0) {
             for (int i = 0; i < pState.getNumBirds(); i++) {
@@ -67,8 +147,9 @@ class Player {
 
         int mostPredictableBird = -1;
         int nextPredictedMove = -1;
+        List<Integer> mostPredictableSeq = new ArrayList<>();
         //double[] predictionThresholdState = {0.45, 0.45, 0.6, 0.8, 0.8};
-        double predictionThresholdState = 0.65;
+        double predictionThresholdState = 0.67;
 
         for (int b = 0; b<pState.getNumBirds(); b++){
             if (pState.getBird(b).isDead()){
@@ -90,21 +171,24 @@ class Player {
                 mostPredictableBird = b;
                 nextPredictedMove = mostProbableState;
                 predictionThresholdState = nextStatesProb.get(mostProbableState);
+                mostPredictableSeq = seq;
             }
 
         }
 
-
-        if (mostPredictableBird<0){
+        // || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK
+        if (mostPredictableBird<0 || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK){
             return cDontShoot;
         } else {
             return new Action(mostPredictableBird, nextPredictedMove);
         }
-		*/
+        */
 
         // This line would predict that bird 0 will move right and shoot at it.
         // return Action(0, MOVE_RIGHT);
     }
+
+
 
     /**
      * Guess the species!
@@ -123,7 +207,7 @@ class Player {
          * Here you should write your clever algorithms to guess the species of
          * each bird. This skeleton makes no guesses, better safe than sorry!
          */
-    	
+
 		int[] lGuess = new int[pState.getNumBirds()];
     	guessProbabilityes = new double[pState.getNumBirds()];
     	// first round identify the pattern for species  and mark them into the models and then we can guess?
@@ -243,7 +327,7 @@ class Player {
 		            HMM specieHMMModelToTrain = new HMM();
 		            if(seqArray.size()>35) {
 		            	specieHMMModelToTrain.BaumWelchTrain(seqArray);
-		            	ArrayList<HMM> toAddThisNewModelTo = specieHmm.get(specieOfTmpBird);
+		            	List<HMM> toAddThisNewModelTo = specieHmm.get(specieOfTmpBird);
 		            	toAddThisNewModelTo.add(specieHMMModelToTrain);
 		            	specieHmm.set(specieOfTmpBird, toAddThisNewModelTo);	            
 		            }
