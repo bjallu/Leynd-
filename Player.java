@@ -67,6 +67,7 @@ class Player {
 
         int mostPredictableBird = -1;
         int nextPredictedMove = -1;
+        //double[] predictionThresholdState = {0.45, 0.45, 0.6, 0.8, 0.8};
         double predictionThresholdState = 0.65;
 
         for (int b = 0; b<pState.getNumBirds(); b++){
@@ -90,12 +91,14 @@ class Player {
                 nextPredictedMove = mostProbableState;
                 predictionThresholdState = nextStatesProb.get(mostProbableState);
             }
+
         }
+
 
         if (mostPredictableBird<0){
             return cDontShoot;
         } else {
-            return new Action(mostPredictableBird,nextPredictedMove);
+            return new Action(mostPredictableBird, nextPredictedMove);
         }
 		*/
 

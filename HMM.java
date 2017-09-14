@@ -229,7 +229,7 @@ public class HMM {
             logProb = -1.0*logProb;
 
             iters++;
-            if (iters<MAX_ITERS && logProb>oldLogProb){
+            if (iters<MAX_ITERS && logProb>oldLogProb+0.0000001){
                 oldLogProb = logProb;
             } else {
                 break whileloop;
@@ -238,12 +238,11 @@ public class HMM {
     }
 
     public List<Double> predictNextEmissions(List<Integer> o){
-        //List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
-        //mat probStates = new mat(1,lastGamma.size());
-        //probStates.setRow(0,lastGamma);
-        mat tmpAlpha = this.alphaMatrix(o);
-        mat probStates = new mat(1,tmpAlpha.getNmrOfColumns());
-        probStates.setRow(0,tmpAlpha.getRow(o.size()-1));
+        List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
+        mat probStates = new mat(1,lastGamma.size());
+        probStates.setRow(0,lastGamma);
+        //mat probStates = new mat(1,alpha.getNmrOfColumns());
+        probStates.setRow(0,alpha.getRow(o.size()-1));
 
         mat nextStatesProb = probStates.product(A);
 
