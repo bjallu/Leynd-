@@ -8,7 +8,7 @@ public class HMM {
     private mat gamma;
     private mat beta;
     private mat alpha;
-    private final int MAX_ITERS = 30;
+    private final int MAX_ITERS = 40;
     double oldLogProb = Double.NEGATIVE_INFINITY;
 
     public HMM(mat A, mat B, mat pi){
@@ -237,13 +237,22 @@ public class HMM {
         }
     }
 
-    public List<Double> predictNextEmissions(List<Integer> o){
+    public List<Double> predictNextEmissions(){
+    	/*
         List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
         mat probStates = new mat(1,lastGamma.size());
         probStates.setRow(0,lastGamma);
         //mat probStates = new mat(1,alpha.getNmrOfColumns());
         probStates.setRow(0,alpha.getRow(o.size()-1));
 
+        mat nextStatesProb = probStates.product(A);
+
+        mat nextEmissionProbs = nextStatesProb.product(B);
+
+        return nextEmissionProbs.getRow(0);*/
+        List<Double> lastGamma = gamma.getRow(gamma.getNmrOfRows()-1);
+        mat probStates = new mat(1,lastGamma.size());
+        probStates.setRow(0,lastGamma);
         mat nextStatesProb = probStates.product(A);
 
         mat nextEmissionProbs = nextStatesProb.product(B);
