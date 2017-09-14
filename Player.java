@@ -14,12 +14,12 @@ class Player {
     int[] guessIds;
 
     public Player() {
-    	
-    	for(int i = 0; i<Constants.COUNT_SPECIES; i++) {
-    		ArrayList<HMM> specieHmmChain = new ArrayList<HMM>();
-    		specieHmm.add(specieHmmChain);
-    	}
-    	
+
+        for(int i = 0; i<Constants.COUNT_SPECIES; i++) {
+            ArrayList<HMM> specieHmmChain = new ArrayList<HMM>();
+            specieHmm.add(specieHmmChain);
+        }
+
     }
 
     public static int likeliestSpecies(List<List<HMM>> Allhmms, List<Integer> obs){
@@ -131,13 +131,22 @@ class Player {
             birdPatternHMMs.clear();
         }
 
-        // add some code that not only gets the next possible state but also 
+        // add some code that not only gets the next possible state but also
         // compares it to some hmm that are optimesd to detect the 5 different patterns
         // ie dyving circling fx and are initialized in such a way
 
-        int sequenceLength = pState.getBird(0).getSeqLength();
-        if (sequenceLength < 65 || specieHmm.get(Constants.SPECIES_BLACK_STORK).size() == 0) {return cDontShoot;}
+        /*int birdsAlive = 0;
+        for (int b = 0; b < pState.getNumBirds();b++){
+            if (pState.getBird(b).isAlive()){
+                birdsAlive++;
+            }
+        }*/
 
+        int sequenceLength = pState.getBird(0).getSeqLength();
+        //int sequenceThreshold = 100- (int) (pState.getNumBirds()*1.7);
+        int sequenceThreshold = 65;
+        if (sequenceLength < sequenceThreshold /*|| specieHmm.get(Constants.SPECIES_BLACK_STORK).size() == 0*/) {return cDontShoot;}
+        //if (specieHmm.get(Constants.SPECIES_BLACK_STORK).size() == 0 && Math.random()<0.6) {return cDontShoot;}
         if (birdPatternHMMs.size() == 0) {
             for (int i = 0; i < pState.getNumBirds(); i++) {
                 birdPatternHMMs.add(new HMM());
@@ -148,7 +157,8 @@ class Player {
         int nextPredictedMove = -1;
         List<Integer> mostPredictableSeq = new ArrayList<>();
         //double[] predictionThresholdState = {0.45, 0.45, 0.6, 0.8, 0.8};
-        double predictionThresholdState = 0.67;
+        //double predictionThresholdState = /*0.67*/ 1-birdsAlive/(100-sequenceLength);
+        double predictionThresholdState = 0.60;
 
         for (int b = 0; b<pState.getNumBirds(); b++){
             if (pState.getBird(b).isDead()){
@@ -176,7 +186,7 @@ class Player {
         }
 
         // || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK
-        if (mostPredictableBird<0 || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK){
+        if (mostPredictableBird<0){
             return cDontShoot;
         } else {
             return new Action(mostPredictableBird, nextPredictedMove);
@@ -330,7 +340,7 @@ class Player {
         */
         // Could need a second check if a certain bird spotting model hasn't been trained
     }
-    
+
     public static int argumentMax (double[] matrix)
     {
         int id = -1;
