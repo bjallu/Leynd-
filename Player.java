@@ -64,7 +64,8 @@ class Player {
 
         int mostPredictableBird = -1;
         int nextPredictedMove = -1;
-        double predictionThresholdState = 0.67;
+        //double[] predictionThresholdState = {0.45, 0.45, 0.6, 0.8, 0.8};
+        double predictionThresholdState = 0.65;
 
         for (int b = 0; b<pState.getNumBirds(); b++){
             if (pState.getBird(b).isDead()){
@@ -87,12 +88,14 @@ class Player {
                 nextPredictedMove = mostProbableState;
                 predictionThresholdState = nextStatesProb.get(mostProbableState);
             }
+
         }
+
 
         if (mostPredictableBird<0){
             return cDontShoot;
         } else {
-            return new Action(mostPredictableBird,nextPredictedMove);
+            return new Action(mostPredictableBird, nextPredictedMove);
         }
         //return cDontShoot;
 
@@ -127,7 +130,7 @@ class Player {
     	// first round identify the pattern for species  and mark them into the models and then we can guess?
 
         for (int i = 0; i < pState.getNumBirds(); i++) {
-            lGuess[i] = Constants.SPECIES_UNKNOWN; // most common bird as far as I know
+            lGuess[i] = Constants.SPECIES_PIGEON; // most common bird as far as I know
         }
 
     	if(pState.getRound() == 0) {
@@ -195,15 +198,14 @@ class Player {
 			
 			Bird tmpBirdPerson = pState.getBird(i);
 			int specieOftmpBird = pSpecies[i];
-            Integer[] seqArray = new Integer[tmpBirdPerson.getSeqLength()];
-            
-            if(!tmpBirdPerson.isDead()) {           
-	            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){	            	
-	                seqArray[j] = tmpBirdPerson.getObservation(j);
-	            }                    
-	            List<Integer> seq = Arrays.asList(seqArray);
-                DifferentBirdSpecies[specieOftmpBird].BaumWelchTrain(seq);
+			List<Integer> seq = new ArrayList<>();
+            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){
+                if (tmpBirdPerson.getObservation(j) < 0){
+                    break;
+                }
+                seq.add(tmpBirdPerson.getObservation(j));
             }
+            DifferentBirdSpecies[specieOftmpBird].BaumWelchTrain(seq);
 		}
         // Could need a second check if a certain bird spotting model hasn't been trained
     }
