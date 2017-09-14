@@ -11,12 +11,16 @@ class Player {
     // List<HMM> DifferentBirdSpecies = new ArrayList<>(Constants.COUNT_SPECIES);
     private List<Double> probabilityValues = new ArrayList<>();
     HMM[] DifferentBirdSpecies = new HMM[Constants.COUNT_SPECIES];
+    public ArrayList<ArrayList<HMM>> specieHmm = new ArrayList<ArrayList<HMM>>();
     private final int NMR_OF_STATES = 5;
+    public static double[] guessProbabilityes;
+    int[] guessIds;
 
     public Player() {
     	
     	for(int i = 0; i<Constants.COUNT_SPECIES; i++) {
-    		DifferentBirdSpecies[i] = new HMM();
+    		ArrayList<HMM> specieHmmChain = new ArrayList<HMM>();
+    		specieHmm.add(specieHmmChain);
     	}
     	
     }
@@ -77,7 +81,7 @@ class Player {
             birdHMM.BaumWelchTrain(seq);
             birdPatternHMMs.set(b,birdHMM);
 
-            List<Double> nextStatesProb = birdHMM.predictNextEmissions();
+            List<Double> nextStatesProb = birdHMM.predictNextEmissions(seq);
             int mostProbableState = nextStatesProb.indexOf(Collections.max(nextStatesProb));
             if (nextStatesProb.get(mostProbableState)>predictionThresholdState){
                 mostPredictableBird = b;
@@ -116,12 +120,14 @@ class Player {
          */
     	
 		int[] lGuess = new int[pState.getNumBirds()];
-    	
+    	guessProbabilityes = new double[pState.getNumBirds()];
     	// first round identify the pattern for species  and mark them into the models and then we can guess?
 
     	if(pState.getRound() == 0) {
             for (int i = 0; i < pState.getNumBirds(); ++i) {
             	lGuess[i] = Constants.SPECIES_UNKNOWN; // most common bird as far as I know
+        		lGuess[0] = Constants.SPECIES_PIGEON;
+            	guessProbabilityes[i] = -1;
             }
     	}
     	else {
@@ -138,26 +144,37 @@ class Player {
                 	else continue; 
                 }
                 
-                if(seqArray.size()>45) { 
-	    			for(int k = 0; k<DifferentBirdSpecies.length; k++) {
-	    				HMM tmpHMM = DifferentBirdSpecies[k];
-		    				if(tmpHMM != null) {
-			    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
-			    				if(tmpProbability > maxProbability) {
-			    					maxProbability = tmpProbability;
-			    					specieID = k;
-			    				}
+                //if(seqArray.size()>45) { 
+    			for(int k = 0; k<specieHmm.size(); k++) {
+    				for(int j=0; j<specieHmm.get(k).size();j++) {
+    					HMM tmpHMM = specieHmm.get(k).get(j);
+	    				if(tmpHMM != null) {
+		    				//double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
+	    					double tmpProbability = tmpHMM.AlphaProb(seqArray);
+		    				if(tmpProbability > maxProbability) {
+		    					maxProbability = tmpProbability;
+		    					specieID = k;
 		    				}
-	    			}
-    				lGuess[i] = specieID;
-    				probabilityValues.add(maxProbability);
-                }
-                else {
-                	lGuess[i] = Constants.SPECIES_UNKNOWN;	
-                }
+	    				}
+    				}
+    			}
+    			
+    			if(maxProbability > - 5.0) {
+	    			guessProbabilityes[i] = maxProbability;
+	    			lGuess[i] = specieID;
+    			}
+    			else {
+	    			guessProbabilityes[i] = maxProbability;
+	    			lGuess[i] = Constants.SPECIES_UNKNOWN;
+    			}
+                //}
+                ///else {
+	    	//		guessProbabilityes[i] = -1;
+              //  	lGuess[i] = Constants.SPECIES_UNKNOWN;
+               // }
     		}
     	}    
-    	
+    	guessIds = lGuess;
         return lGuess;
     }
 
@@ -183,11 +200,82 @@ class Player {
      */
     public void reveal(GameState pState, int[] pSpecies, Deadline pDue) {
     	
+    	// print info of what probabilities gave me the right answer to figure out some
+    	// threshold to put
+    	
     	// if its the first round we train our guessing model on the
     	// correct species
     	// or we havent seen this species before then we train on it 
     		
 		// for each different bird we train the model on the same types
+    	// try a version where we only train each model once per bird sight
+    	
+    	
+    	for(int i = 0; i<pSpecies.length;i++) {
+    		int specieOfTmpBird = pSpecies[i];
+    		if(specieOfTmpBird !=-1) {
+    			//if(DifferentBirdSpecies[specieOfTmpBird]==null) {
+	    			// We train dat dere model to recgonise this specie
+	    			ArrayList<Integer> seqArray = new ArrayList<Integer>();
+	    			Bird tmpBirdPerson = pState.getBird(i);
+		            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){
+		            	if(tmpBirdPerson.wasAlive(j)) {
+		            		seqArray.add(tmpBirdPerson.getObservation(j));
+		            	}
+		            }
+		            HMM specieHMMModelToTrain = new HMM();
+		            if(seqArray.size()>35) {
+		            	specieHMMModelToTrain.BaumWelchTrain(seqArray);
+		            	ArrayList<HMM> toAddThisNewModelTo = specieHmm.get(specieOfTmpBird);
+		            	toAddThisNewModelTo.add(specieHMMModelToTrain);
+		            	specieHmm.set(specieOfTmpBird, toAddThisNewModelTo);	            
+		            }
+    		}
+//	    		}
+    		//}
+    		//else {
+    	//		continue;
+    	//	}
+    	}
+    	
+    	
+    	
+    	
+    	
+    	
+    	/*
+    	if(pState.getRound() == 0) {
+        	
+        	for(int i = 0; i<Constants.COUNT_SPECIES; i++) {
+        		if(DifferentBirdSpecies[i] != null) {
+        			System.err.println("hehe");
+        		}
+        	}
+    	}
+    	
+    	//only train if the specie is missing from our catologue
+    	for(int i = 0; i<pSpecies.length;i++) {
+    		int specieId = pSpecies[i];
+    		if(DifferentBirdSpecies[specieId] == null) {
+    			System.err.println("hehe");
+    			// We train dat dere model to recgonise this specie
+    			ArrayList<Integer> seqArray = new ArrayList<Integer>();
+    			Bird tmpBirdPerson = pState.getBird(i);
+	            for (int j = 0; j< tmpBirdPerson.getSeqLength();j++){
+	            	if(tmpBirdPerson.wasAlive(j)) seqArray.add(tmpBirdPerson.getObservation(j));
+	            	else break;
+	            }
+	           // HMM specieHMMModelToTrain = new HMM();
+	            if(seqArray.size()>45) {
+	            	HMM specieHMMModelToTrain = new HMM();
+	            	specieHMMModelToTrain.BaumWelchTrain(seqArray);
+	            	DifferentBirdSpecies[specieId] = specieHMMModelToTrain;
+	            }
+    		}
+    	}
+    	
+    	*/
+    	/*
 		for(int i = 0; i<pState.getNumBirds(); i++) {
 			
 			Bird tmpBirdPerson = pState.getBird(i);
@@ -206,9 +294,20 @@ class Player {
 			}
 		}
 		
-		System.err.println(probabilityValues.toString());
 		
-		
+    	// print info of what probabilities gave me the right answer to figure out some
+    	// threshold to put
+    	*/
+    	if(pState.getRound() != 0) {
+	    	for(int i = 0; i<pSpecies.length;i++) {
+	    		System.err.println("The Correct specie " + pSpecies[i]);
+	    		System.err.println("My guess " + guessIds[i]);
+	    		System.err.println("my probabilty "  + guessProbabilityes[i]);
+	    	}
+	    	//for(int j = 0;j<guessProbabilityes.length;j++) {
+	    		//System.err.println("my probabilty "  + guessProbabilityes[i]);
+	    //	}
+    	}
     	// Could need a second check if a certain bird spotting model hasn't been trained   	   	
     }
 

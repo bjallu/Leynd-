@@ -163,12 +163,11 @@ public class mat {
 
     public Double sumElements(){
         Double sum = 0.0;
-        int scale = (int) Math.pow(10, 6); // prufa med scale 7 ef etta virkar ekki
         if (this.getNmrOfRows() != 1){
             throw new java.lang.RuntimeException("Must have dimensions 1XM");
         } else {
             for (Double d:matrix.get(0)){
-                sum += (double) Math.round(d * scale) / scale;
+                sum += d;
             }
         }
        // double roundedSum = (double) Math.round(sum * scale) / scale;
@@ -185,15 +184,13 @@ public class mat {
     public void printMatrixForKattis() {
     	// First print the matrix dimensions then loop through the values
     	// And round them    	
-    	System.out.print(this.getNmrOfRows() + " "); // Could also just call the element right away i.e. nmrOfRows but calling the func is cleaner imo
-    	System.out.print(this.getNmrOfColumns() + " ");
+    	System.err.print(this.getNmrOfRows() + " "); // Could also just call the element right away i.e. nmrOfRows but calling the func is cleaner imo
+    	System.err.print(this.getNmrOfColumns() + " ");
     	
         for(int i = 0; i < this.matrix.size(); i++){
             for(int j = 0; j < this.matrix.get(i).size(); j++){
                 double value = this.matrix.get(i).get(j);
-                int scale = (int) Math.pow(10, 2);
-                double roundedValue = (double) Math.round(value * scale) / scale;
-        		System.out.print(roundedValue + " ");
+        		System.err.print(value + " ");
             }
         }
     }

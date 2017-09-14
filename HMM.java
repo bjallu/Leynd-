@@ -2,9 +2,9 @@ import java.util.*;
 
 public class HMM {
 
-    private mat A;
-    private mat B;
-    private mat pi;
+    public mat A;
+    public mat B;
+    public mat pi;
     private mat gamma;
     private mat beta;
     private mat alpha;
@@ -21,12 +21,12 @@ public class HMM {
         this.A = new mat(Initials.TRANSITION);
         this.B = new mat(Initials.EMISSION);
         this.pi = new mat(Initials.INITIAL_STATES);
-        this.fillMatrix(A);
-        this.fillMatrix(B);
-        this.fillMatrix(pi);
+        this.populateMatrix(A);
+        this.populateMatrix(B);
+        this.populateMatrix(pi);
     }
 
-    private void fillMatrix(mat matrix){
+    private void populateMatrix(mat matrix){
         Random r = new Random();
         for(int i = 0; i < matrix.getNmrOfRows(); i++){
             double sum = 0;
@@ -43,37 +43,83 @@ public class HMM {
     }
 
     public mat alphaMatrix(List<Integer> obs){
-        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());
+        // calc alpha
+    	
+        alpha = new mat(obs.size(),A.getNmrOfColumns());
+        List<Double> c = new ArrayList<>(obs.size());
+    	
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        //c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,alpha.getElement(0,i)/c0);
+        }
+        //c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            //ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,alpha.getElement(t,i)/ct);
+            }
+            c.add(ct);
+        }
+        
+    	/*
         mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
         boolean isFirst = true;
-        for (int ind = 0; ind<obs.size();ind++){
-            int oInt = obs.get(ind);
-            Double ct = 0.0;
+        for (int o:obs){
+            int oInt = o;
             if (isFirst){
                 currAlpha = pi.dotProductColumn(B,oInt);
-                for (Double d : currAlpha.getRow(0)){
-                    ct += d;
-                }
-                ct = 1/ct;
-                for (int i=0;i<pi.getNmrOfColumns();i++){
-                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
-                }
-                alpha.setRow(0, currAlpha.getRow(0));
                 isFirst = !isFirst;
             } else {
-                currAlpha = currAlpha.product(A).dotProductColumn(B,oInt);
-                for (Double d : currAlpha.getRow(0)){
-                    ct += d;
-                }
-                ct = 1/ct;
-                for (int i=0;i<pi.getNmrOfColumns();i++){
-                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
-                }
-                alpha.setRow(ind, currAlpha.getRow(0));
+                currAlpha = currAlpha.product(A);
+                currAlpha = currAlpha.dotProductColumn(B,oInt);
             }
-
         }
+        return currAlpha;
+        
+        
+        /*
+        mat alphaFixed = alpha;
+        for(double d:alphaFixed.getRow(obs.size()-1)) {
+        	double value 
+        }
+        
+        */
+        
         return alpha;
+    }
+    
+    public mat CurrentAlpha(List<Integer> obs) {
+    	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
+        boolean isFirst = true;
+        for (int o:obs){
+            int oInt = o;
+            if (isFirst){
+                currAlpha = pi.dotProductColumn(B,oInt);
+                isFirst = !isFirst;
+            } else {
+                currAlpha = currAlpha.product(A);
+                currAlpha = currAlpha.dotProductColumn(B,oInt);
+            }
+        }
+        return currAlpha;
     }
 
     public void BaumWelchTrain(List<Integer> obs){
@@ -309,19 +355,111 @@ public class HMM {
 
     public double HowLikelyIsThisObservation(List<Integer> obs) {
         
-    	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
-        boolean isFirst = true;
-        for (int o:obs){
-            if (isFirst){
-                currAlpha = pi.dotProductColumn(B,o);
-                isFirst = !isFirst;
-            } else {
-                currAlpha = currAlpha.product(A);
-                currAlpha = currAlpha.dotProductColumn(B,o);
-            }
-        }
-        return currAlpha.sumElements();
+    	/*
+    	
+    	double firstIterationSum = 0;
+    	
+        mat alpha = new mat(obs.size(),A.getNmrOfColumns());
+        
+    	for(int i = 0; i<A.getNmrOfColumns(); i++) {
+    		double value = B.getElement(i, obs.get(0))*pi.getElement(0, i);
+    		alpha.setElement(0, i, value);
+    		firstIterationSum += value;
+    	}
+    	
+    	for(int i = 0; i<A.getNmrOfColumns(); i++) {
+    		double value = alpha.getElement(0, i);
+    		alpha.setElement(0, i, value/firstIterationSum);
+    	}
+    	
+    	for(int t=1; t<obs.size();t++) {
+    		double totalSum = 0;
+    		for(int i=0;i<A.getNmrOfColumns();i++) {
+    			double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                double value = B.getElement(i, obs.get(i))*currAlpha;
+                alpha.setElement(t, i, value);
+                totalSum += value;
+    		}
+    		
+    		for(int i = 0; i<A.getNmrOfColumns();i++) {
+    			double value = alpha.getElement(t, i);
+    			alpha.setElement(t, i, value/totalSum);
+    		}
+    	}
+    	
+    	*/
+    	
+    	//mat alphaMale = alphaMatrix(obs);
+    	
+    	mat currentAlpachaMale = CurrentAlpha(obs);
+    	
+    	double probabiltyToReturn = 0;
+    	
+    	
+    	
+    	//pi.getNmrOfRows(),pi.getNmrOfColumns()
+    	
+    	//for(int i = 0; i<pi.getNmrOfColumns(); i++) {
+    		
+    		//probabiltyToReturn += alphaMale.getElement(0, i);
+    	//}  	   	
+
+    	
+    	probabiltyToReturn = currentAlpachaMale.sumElements();//*100;
+    	
+    	//System.err.println(probabiltyToReturn);
+    	
+    	return probabiltyToReturn;
     }
+    
+    public double AlphaProb(List<Integer> obs) {
+        alpha = new mat(obs.size(),A.getNmrOfColumns());
+        List<Double> c = new ArrayList<>(obs.size());
+
+        // calc alpha
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,c0*alpha.getElement(0,i));
+        }
+        c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,ct*alpha.getElement(t,i));
+            }
+            c.add(ct);
+        }
+        
+    	double logProb = 0.0;
+        for (int t = 0;t<alpha.getRow(0).size();t++){
+            logProb += Math.log(c.get(t));
+        }
+        logProb = -1.0*logProb;        
+        
+        return logProb;
+    }
+    
 
     public void LogHMMModels() {
     	this.A.LogMatrixes();
