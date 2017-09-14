@@ -1,10 +1,13 @@
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class mat {
 
     private List<List<Double>> matrix;
     private int nmrOfColumns;
     private int nmrOfRows;
+    static final Logger LOGGER = Logger.getLogger("matrixLogger");
 
     public mat(){
         nmrOfColumns=0;
@@ -17,9 +20,9 @@ public class mat {
         nmrOfColumns = M;
         matrix = new ArrayList<>(N);
         for (int i = 0; i<N; i++){
-            Double[] arr = new Double[M];
+            Double[] arr = new Double[M]; 
             ArrayList<Double> row = new ArrayList<>(Arrays.asList(arr));
-            Collections.fill(row, 0.0);//fills all M entries with 0
+            Collections.fill(row, 0.0);//fills all M entries with 00
             matrix.add(row);
         }
     }
@@ -160,12 +163,11 @@ public class mat {
 
     public Double sumElements(){
         Double sum = 0.0;
-        int scale = (int) Math.pow(10, 6); // prufa med scale 7 ef etta virkar ekki
         if (this.getNmrOfRows() != 1){
             throw new java.lang.RuntimeException("Must have dimensions 1XM");
         } else {
             for (Double d:matrix.get(0)){
-                sum += (double) Math.round(d * scale) / scale;
+                sum += d;
             }
         }
        // double roundedSum = (double) Math.round(sum * scale) / scale;
@@ -182,15 +184,13 @@ public class mat {
     public void printMatrixForKattis() {
     	// First print the matrix dimensions then loop through the values
     	// And round them    	
-    	System.out.print(this.getNmrOfRows() + " "); // Could also just call the element right away i.e. nmrOfRows but calling the func is cleaner imo
-    	System.out.print(this.getNmrOfColumns() + " ");
+    	System.err.print(this.getNmrOfRows() + " "); // Could also just call the element right away i.e. nmrOfRows but calling the func is cleaner imo
+    	System.err.print(this.getNmrOfColumns() + " ");
     	
         for(int i = 0; i < this.matrix.size(); i++){
             for(int j = 0; j < this.matrix.get(i).size(); j++){
                 double value = this.matrix.get(i).get(j);
-                int scale = (int) Math.pow(10, 2);
-                double roundedValue = (double) Math.round(value * scale) / scale;
-        		System.out.print(roundedValue + " ");
+        		System.err.print(value + " ");
             }
         }
     }
@@ -207,6 +207,22 @@ public class mat {
             }
         }
         System.out.println(str);
+    }
+    
+    public String matrixInfo() {
+    	String str = "";
+    	for(int i = 0; i < this.matrix.size(); i++){
+            for(int j = 0; j < this.matrix.get(i).size(); j++){
+                double value = this.matrix.get(i).get(j);
+                str = str + " " + value;
+            }
+        }
+    	return str;
+    }
+    
+    public void LogMatrixes() {
+    	String matrixInfo = matrixInfo();
+    	LOGGER.info(matrixInfo);
     }
 
     public static void main(String[] args){

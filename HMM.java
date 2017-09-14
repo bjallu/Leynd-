@@ -2,13 +2,13 @@ import java.util.*;
 
 public class HMM {
 
-    private mat A;
-    private mat B;
-    private mat pi;
+    public mat A;
+    public mat B;
+    public mat pi;
     private mat gamma;
     private mat beta;
     private mat alpha;
-    private final int MAX_ITERS = 35;
+    private final int MAX_ITERS = 30;
     double oldLogProb = Double.NEGATIVE_INFINITY;
 
     public HMM(mat A, mat B, mat pi){
@@ -21,12 +21,12 @@ public class HMM {
         this.A = new mat(Initials.TRANSITION);
         this.B = new mat(Initials.EMISSION);
         this.pi = new mat(Initials.INITIAL_STATES);
-        this.fillMatrix(A);
-        this.fillMatrix(B);
-        this.fillMatrix(pi);
+        this.populateMatrix(A);
+        this.populateMatrix(B);
+        this.populateMatrix(pi);
     }
 
-    private void fillMatrix(mat matrix){
+    private void populateMatrix(mat matrix){
         Random r = new Random();
         for(int i = 0; i < matrix.getNmrOfRows(); i++){
             double sum = 0;
@@ -43,37 +43,59 @@ public class HMM {
     }
 
     public mat alphaMatrix(List<Integer> obs){
-        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());
-        mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
+        // calc alpha
+    	
+        alpha = new mat(obs.size(),A.getNmrOfColumns());
+        List<Double> c = new ArrayList<>(obs.size());
+    	
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        //c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,alpha.getElement(0,i)/c0);
+        }
+        //c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            //ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,alpha.getElement(t,i)/ct);
+            }
+            c.add(ct);
+        }
+        
+        return alpha;
+    }
+    
+    public mat CurrentAlpha(List<Integer> obs) {
+    	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
         boolean isFirst = true;
-        for (int ind = 0; ind<obs.size();ind++){
-            int oInt = obs.get(ind);
-            Double ct = 0.0;
+        for (int o:obs){
+            int oInt = o;
             if (isFirst){
                 currAlpha = pi.dotProductColumn(B,oInt);
-                for (Double d : currAlpha.getRow(0)){
-                    ct += d;
-                }
-                ct = 1/ct;
-                for (int i=0;i<pi.getNmrOfColumns();i++){
-                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
-                }
-                alpha.setRow(0, currAlpha.getRow(0));
                 isFirst = !isFirst;
             } else {
-                currAlpha = currAlpha.product(A).dotProductColumn(B,oInt);
-                for (Double d : currAlpha.getRow(0)){
-                    ct += d;
-                }
-                ct = 1/ct;
-                for (int i=0;i<pi.getNmrOfColumns();i++){
-                    currAlpha.setElement(0,i,ct*currAlpha.getElement(0,i));
-                }
-                alpha.setRow(ind, currAlpha.getRow(0));
+                currAlpha = currAlpha.product(A);
+                currAlpha = currAlpha.dotProductColumn(B,oInt);
             }
-
         }
-        return alpha;
+        return currAlpha;
     }
 
     public void BaumWelchTrain(List<Integer> obs){
@@ -304,24 +326,119 @@ public class HMM {
             }
         }
         return id;
-    }
+    }   
+    
+    
 
     public double HowLikelyIsThisObservation(List<Integer> obs) {
-        
-    	mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
-        boolean isFirst = true;
-        for (int o:obs){
-            if (isFirst){
-                currAlpha = pi.dotProductColumn(B,o);
-                isFirst = !isFirst;
-            } else {
-                currAlpha = currAlpha.product(A);
-                currAlpha = currAlpha.dotProductColumn(B,o);
-            }
-        }
-        return currAlpha.sumElements();
+    	
+    	mat currentAlpachaMale = CurrentAlpha(obs);
+    	
+    	double probabiltyToReturn = 0;  	
+    	probabiltyToReturn = currentAlpachaMale.sumElements();//*100;
+    	
+    	return probabiltyToReturn;
     }
+    
+    public double AlphaProb(List<Integer> obs) {
+        alpha = new mat(obs.size(),A.getNmrOfColumns());
+        List<Double> c = new ArrayList<>(obs.size());
 
+        // calc alpha
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,c0*alpha.getElement(0,i));
+        }
+        c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,ct*alpha.getElement(t,i));
+            }
+            c.add(ct);
+        }
+        
+    	double logProb = 0.0;
+        for (int t = 0;t<alpha.getRow(0).size();t++){
+            logProb += Math.log10(c.get(t));
+        }
+        logProb = -1.0*logProb;        
+        
+        return logProb;
+    }
+    
+
+    public void LogHMMModels() {
+    	this.A.LogMatrixes();
+    	this.B.LogMatrixes();
+    	this.pi.LogMatrixes();
+    }
+    
+    public mat AlphaPassSeqOdds(List<Integer> obs) {
+        // calc alpha
+    	List<Double> c = new ArrayList<>(obs.size());
+        mat alpha = new mat(obs.size(),pi.getNmrOfColumns());   	 
+        double c0 = 0.0;
+        Integer o0 = obs.get(0);
+        for (int i = 0; i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,pi.getElement(0,i)*B.getElement(i,o0));
+            c0 += alpha.getElement(0,i);
+        }
+        c0 = 1.0/c0;
+        for (int i = 0;i<A.getNmrOfColumns();i++){
+            alpha.setElement(0,i,c0*alpha.getElement(0,i));
+        }
+        c.add(c0);
+
+        for (int t=1;t<obs.size();t++){
+            double ct = 0.0;
+            Integer o = obs.get(t);
+            for (int i=0;i<A.getNmrOfColumns();i++){
+                double currAlpha = 0.0;
+                for (int j=0;j<A.getNmrOfColumns();j++){
+                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
+                }
+                currAlpha = currAlpha*B.getElement(i,o);
+                ct += currAlpha;
+                alpha.setElement(t,i,currAlpha);
+            }
+            ct = 1.0/ct;
+            for (int i = 0;i<A.getNmrOfColumns();i++){
+                alpha.setElement(t,i,ct*alpha.getElement(t,i));
+            }
+            c.add(ct);
+        }        	
+        return alpha;        
+    }
+    
+    public double GetScaledOdds(List<Integer> obs) {
+    	mat alpha = AlphaPassSeqOdds(obs);
+    	// get the last row to get the odds of observing this seq from the given hmm
+    	double odds = 0;
+    	for(double d:alpha.getRow(obs.size()-1)) {
+    		odds += d;
+    	}
+    	
+    	return odds;
+    }
 
     public static void main(String[] args){
         mat A = new mat();
