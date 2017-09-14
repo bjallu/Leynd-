@@ -50,6 +50,8 @@ class Player {
             birdPatternHMMs.clear();
         }
         
+        return cDontShoot;/*
+        
         // add some code that not only gets the next possible state but also 
         // compares it to some hmm that are optimesd to detect the 5 different patterns
         // ie dyving circling fx and are initialized in such a way
@@ -95,7 +97,7 @@ class Player {
         } else {
             return new Action(mostPredictableBird,nextPredictedMove);
         }
-
+		*/
 
         // This line would predict that bird 0 will move right and shoot at it.
         // return Action(0, MOVE_RIGHT);
@@ -145,23 +147,35 @@ class Player {
                 }
                 
                 //if(seqArray.size()>45) { 
+                double[] specieProbabilty = new double[specieHmm.size()];
+                
     			for(int k = 0; k<specieHmm.size(); k++) {
+    				double totalProbabilty = 0.0;
+    				int normalizer = specieHmm.get(k).size();
     				for(int j=0; j<specieHmm.get(k).size();j++) {
     					HMM tmpHMM = specieHmm.get(k).get(j);
 	    				if(tmpHMM != null) {
-		    				//double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
-	    					double tmpProbability = tmpHMM.AlphaProb(seqArray);
-		    				if(tmpProbability > maxProbability) {
-		    					maxProbability = tmpProbability;
-		    					specieID = k;
-		    				}
-	    				}
-    				}
+		    				double tmpProbability = tmpHMM.HowLikelyIsThisObservation(seqArray);
+	    					//double tmpProbability = tmpHMM.AlphaProb(seqArray);
+	    					totalProbabilty += tmpProbability;
+		    				//if(tmpProbability > maxProbability) {
+		    				//	maxProbability = tmpProbability;
+		    			//		specieID = k;
+		    			}
+	    			}
+    				specieProbabilty[k] = totalProbabilty/normalizer;
     			}
     			
+    			specieID = argumentMax(specieProbabilty);
+    			
     			//if(maxProbability > - 5.0) {
-	    			guessProbabilityes[i] = maxProbability;
-	    			lGuess[i] = specieID;
+    			if(specieID != -1) {
+    				guessProbabilityes[i] = specieProbabilty[specieID];
+    			}
+    			else {
+    				guessProbabilityes[i] = 0;
+    			}
+	    		lGuess[i] = specieID;
     		//	}
     			//else {
 	    			//guessProbabilityes[i] = maxProbability;
@@ -235,6 +249,7 @@ class Player {
 		
     	// print info of what probabilities gave me the right answer to figure out some
     	// threshold to put
+    	/*
     	if(pState.getRound() != 0) {
 	    	for(int i = 0; i<pSpecies.length;i++) {
 	    		System.err.println("The Correct specie " + pSpecies[i]);
@@ -242,7 +257,22 @@ class Player {
 	    		System.err.println("my probabilty "  + guessProbabilityes[i]);
 	    	}
     	}
+    	*/
     	// Could need a second check if a certain bird spotting model hasn't been trained   	   	
+    }
+    
+    public static int argumentMax (double[] matrix)
+    {
+        int id = -1;
+        double max = Double.NEGATIVE_INFINITY;
+        for (int i = 0; i < matrix.length; i++) {
+            double x = matrix[i];
+            if (x > max) {
+                max = x;
+                id = i;
+            }
+        }
+        return id;
     }
 
     public static final Action cDontShoot = new Action(-1, -1);

@@ -8,7 +8,7 @@ public class HMM {
     private mat gamma;
     private mat beta;
     private mat alpha;
-    private final int MAX_ITERS = 35;
+    private final int MAX_ITERS = 30;
     double oldLogProb = Double.NEGATIVE_INFINITY;
 
     public HMM(mat A, mat B, mat pi){
@@ -327,7 +327,9 @@ public class HMM {
             }
         }
         return id;
-    }
+    }   
+    
+    
 
     public double HowLikelyIsThisObservation(List<Integer> obs) {
     	
