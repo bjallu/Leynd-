@@ -79,30 +79,6 @@ public class HMM {
             c.add(ct);
         }
         
-    	/*
-        mat currAlpha = new mat(pi.getNmrOfRows(),pi.getNmrOfColumns());
-        boolean isFirst = true;
-        for (int o:obs){
-            int oInt = o;
-            if (isFirst){
-                currAlpha = pi.dotProductColumn(B,oInt);
-                isFirst = !isFirst;
-            } else {
-                currAlpha = currAlpha.product(A);
-                currAlpha = currAlpha.dotProductColumn(B,oInt);
-            }
-        }
-        return currAlpha;
-        
-        
-        /*
-        mat alphaFixed = alpha;
-        for(double d:alphaFixed.getRow(obs.size()-1)) {
-        	double value 
-        }
-        
-        */
-        
         return alpha;
     }
     
@@ -354,63 +330,11 @@ public class HMM {
     }
 
     public double HowLikelyIsThisObservation(List<Integer> obs) {
-        
-    	/*
-    	
-    	double firstIterationSum = 0;
-    	
-        mat alpha = new mat(obs.size(),A.getNmrOfColumns());
-        
-    	for(int i = 0; i<A.getNmrOfColumns(); i++) {
-    		double value = B.getElement(i, obs.get(0))*pi.getElement(0, i);
-    		alpha.setElement(0, i, value);
-    		firstIterationSum += value;
-    	}
-    	
-    	for(int i = 0; i<A.getNmrOfColumns(); i++) {
-    		double value = alpha.getElement(0, i);
-    		alpha.setElement(0, i, value/firstIterationSum);
-    	}
-    	
-    	for(int t=1; t<obs.size();t++) {
-    		double totalSum = 0;
-    		for(int i=0;i<A.getNmrOfColumns();i++) {
-    			double currAlpha = 0.0;
-                for (int j=0;j<A.getNmrOfColumns();j++){
-                    currAlpha += alpha.getElement(t-1,j)*A.getElement(j,i);
-                }
-                double value = B.getElement(i, obs.get(i))*currAlpha;
-                alpha.setElement(t, i, value);
-                totalSum += value;
-    		}
-    		
-    		for(int i = 0; i<A.getNmrOfColumns();i++) {
-    			double value = alpha.getElement(t, i);
-    			alpha.setElement(t, i, value/totalSum);
-    		}
-    	}
-    	
-    	*/
-    	
-    	//mat alphaMale = alphaMatrix(obs);
     	
     	mat currentAlpachaMale = CurrentAlpha(obs);
     	
-    	double probabiltyToReturn = 0;
-    	
-    	
-    	
-    	//pi.getNmrOfRows(),pi.getNmrOfColumns()
-    	
-    	//for(int i = 0; i<pi.getNmrOfColumns(); i++) {
-    		
-    		//probabiltyToReturn += alphaMale.getElement(0, i);
-    	//}  	   	
-
-    	
+    	double probabiltyToReturn = 0;  	
     	probabiltyToReturn = currentAlpachaMale.sumElements();//*100;
-    	
-    	//System.err.println(probabiltyToReturn);
     	
     	return probabiltyToReturn;
     }
@@ -453,7 +377,7 @@ public class HMM {
         
     	double logProb = 0.0;
         for (int t = 0;t<alpha.getRow(0).size();t++){
-            logProb += Math.log(c.get(t));
+            logProb += Math.log10(c.get(t));
         }
         logProb = -1.0*logProb;        
         
