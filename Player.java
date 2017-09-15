@@ -9,6 +9,7 @@ class Player {
     private List<Double> probabilityValues = new ArrayList<>();
     HMM[] DifferentBirdSpecies = new HMM[Constants.COUNT_SPECIES];
     public List<List<HMM>> specieHmm = new ArrayList<List<HMM>>();
+    private double storkThreshold = 3.629881714570972E-79;
     private final int NMR_OF_STATES = 5;
     public static double[] guessProbabilityes;
     int[] guessIds;
@@ -20,6 +21,55 @@ class Player {
             specieHmm.add(specieHmmChain);
         }
 
+    }
+    
+    public static double godDamnStorkOdds(List<List<HMM>> Allhmms, List<Integer> obs) {
+    	
+    	double[] specieProbabilty = new double[Allhmms.size()];
+
+            double totalProbabilty = 0;
+            double normalizer = Allhmms.get(Constants.SPECIES_BLACK_STORK).size();
+            for(int j=0; j<Allhmms.get(Constants.SPECIES_BLACK_STORK).size();j++) {
+                HMM tmpHMM = Allhmms.get(Constants.SPECIES_BLACK_STORK).get(j);
+                if(tmpHMM != null) {
+                    double tmpProbability = tmpHMM.HowLikelyIsThisObservation(obs);
+                    totalProbabilty += tmpProbability;
+                }
+            }
+            specieProbabilty[Constants.SPECIES_BLACK_STORK] = totalProbabilty/normalizer;
+        	
+        return specieProbabilty[Constants.SPECIES_BLACK_STORK];
+
+    }
+    
+    public static boolean likelyEnough(List<List<HMM>> Allhmms, List<Integer> obs) {
+        
+    	int species = Constants.SPECIES_UNKNOWN;
+        double max = Double.NEGATIVE_INFINITY;
+               
+        for (int currHMMs = 0; currHMMs< Allhmms.size(); currHMMs++) {
+            int normalizer = Allhmms.get(currHMMs).size();
+            if(normalizer > 0) {
+	            double totalProbabilty = 0.0;
+	            for (int i = 0; i<Allhmms.get(currHMMs).size();i++) {
+	            	HMM tmpHMM = Allhmms.get(currHMMs).get(i);
+	                if (tmpHMM != null) {
+	                    double tmpProb = tmpHMM.HowLikelyIsThisObservation(obs);
+	                    totalProbabilty += tmpProb;
+	                }
+	            }
+	            double tmp = totalProbabilty/normalizer;
+	            if (tmp > max){
+	                max = tmp;
+	                species = currHMMs;
+	            }
+	            //System.err.println("local max " + tmp + "specy id " + currHMMs);
+            }
+        }
+        if (max<7.708468746136744E-58) {
+        	return false;
+        }
+        return true;
     }
 
     public static int likeliestSpecies(List<List<HMM>> Allhmms, List<Integer> obs){
@@ -141,7 +191,7 @@ class Player {
                 birdsAlive++;
             }
         }*/
-
+        
         int sequenceLength = pState.getBird(0).getSeqLength();
         //int sequenceThreshold = 100- (int) (pState.getNumBirds()*1.7);
         int sequenceThreshold = 65;
@@ -186,7 +236,11 @@ class Player {
         }
 
         // || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK
-        if (mostPredictableBird<0){
+        if (godDamnStorkOdds(specieHmm,mostPredictableSeq)>=storkThreshold) return cDontShoot;
+        
+        if(!likelyEnough(specieHmm,mostPredictableSeq)) return cDontShoot;
+        
+        if (mostPredictableBird<0 || likeliestSpecies(specieHmm,mostPredictableSeq) == Constants.SPECIES_BLACK_STORK){
             return cDontShoot;
         } else {
             return new Action(mostPredictableBird, nextPredictedMove);
@@ -318,12 +372,12 @@ class Player {
                     }
                 }
                 HMM specieHMMModelToTrain = new HMM();
-                if(seqArray.size()>35) {
+               // if(seqArray.size()>70) {
                     specieHMMModelToTrain.BaumWelchTrain(seqArray);
                     List<HMM> toAddThisNewModelTo = specieHmm.get(specieOfTmpBird);
                     toAddThisNewModelTo.add(specieHMMModelToTrain);
                     specieHmm.set(specieOfTmpBird, toAddThisNewModelTo);
-                }
+              //  }
             }
         }
 
